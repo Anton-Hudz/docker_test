@@ -1,0 +1,54 @@
+version: '3.1'
+
+services:
+  db:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=db_user
+      - POSTGRES_PASSWORD=db_password
+      - POSTGRES_DB=postgress
+      - PGDATA=/var/lib/postgresql/data
+    volumes:
+        # - /custom/mount:/var/lib/postgresql/data
+        - /data/db/postgres:/var/lib/postgresql/data
+    ports:
+      - "5431:5432"
+    networks:
+      - docker_test
+    restart: always
+    healthcheck:
+      test: pg_isready -U db_user -d postgress
+      interval: 2s
+      timeout: 2s
+      retries: 5
+  main:
+    build: .
+    container_name: main
+    restart: always
+    networks:
+      - docker_test
+    ports:
+      - 8080:8080
+    depends_on:
+      db:
+        condition: service_healthy
+  migrate:
+    image: migrate/migrate
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./migrations:/migrations
+    networks:
+      - docker_test
+    command:
+      [
+        "-path",
+        "/migrations",
+        "-database",
+        "postgres://db_user:db_password@db:5432/postgress?sslmode=disable",
+        "up",
+        "1"
+      ]
+networks:
+  docker_test:

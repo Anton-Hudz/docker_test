@@ -1,0 +1,3 @@
+$ docker build -t first-app-with-docker .
+$ docker build --help
+docker run -p 8080:8080 --name first-container first-app-with-docker
