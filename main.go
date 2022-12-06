@@ -27,7 +27,6 @@ func main() {
 	if err := serverRun(); err != nil {
 		fmt.Println("ERROR:%w", err)
 	}
-
 }
 
 func serverRun() error {
@@ -42,19 +41,27 @@ func responseTest(w http.ResponseWriter, r *http.Request) {
 	var u UserID
 	u.user_id = chi.URLParam(r, "id")
 	if _, err := fmt.Fprintf(w, "%s\n", u.user_id); err != nil {
-		log.Println(err)
+		log.Println("ERROR:%w", err)
 	}
 
-	userName, err := u.selectUser()
+	db, err := connectDB()
 	if err != nil {
-		fmt.Println("ERROR:%w", err)
+		log.Println("ERROR conn to DB:%w", err)
+		return
 	}
-	//--------------------------
+
+	userName, err := u.selectUser(db)
+	if err != nil {
+		log.Println("ERROR select user:%w", err)
+		return
+	}
+
 	fmt.Println(userName)
+
 	if _, err := fmt.Fprintf(w, "Hello %v!", userName); err != nil {
-		log.Println(err)
+		log.Println("ERROR:%w", err)
 	}
-	//------------------------------------------------
+
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -78,12 +85,7 @@ func responseTest(w http.ResponseWriter, r *http.Request) {
 
 //		return nil
 //	}
-func (u UserID) selectUser() (string, error) {
-	db, err := connectDB()
-	if err != nil {
-		return "", err
-	}
-
+func (u UserID) selectUser(db *sql.DB) (string, error) {
 	var userName string
 	sql := `select user_id from "dockertable" where id = $1;`
 	if err := db.QueryRow(sql, u.user_id).Scan(&userName); err != nil {
@@ -99,6 +101,7 @@ func connectDB() (*sql.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("problem with connect to DB")
 	}
+
 	if err := db.Ping(); err != nil {
 		fmt.Println("failure ping: %w", err)
 	}
