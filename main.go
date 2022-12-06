@@ -13,7 +13,7 @@ import (
 const (
 	server_port = ":8080"
 	db_host     = "localhost"
-	db_port     = 5432
+	db_port     = 5438
 	db_user     = "db_user"
 	db_password = "db_password"
 	db_name     = "postgress"
@@ -27,6 +27,7 @@ func main() {
 	if err := serverRun(); err != nil {
 		fmt.Println("ERROR:%w", err)
 	}
+
 }
 
 func serverRun() error {
@@ -40,35 +41,56 @@ func serverRun() error {
 func responseTest(w http.ResponseWriter, r *http.Request) {
 	var u UserID
 	u.user_id = chi.URLParam(r, "id")
-	if _, err := fmt.Fprintf(w, "%s", u.user_id); err != nil {
+	if _, err := fmt.Fprintf(w, "%s\n", u.user_id); err != nil {
 		log.Println(err)
 	}
 
-	if err := u.createUserDB(); err != nil {
+	userName, err := u.selectUser()
+	if err != nil {
 		fmt.Println("ERROR:%w", err)
 	}
+	//--------------------------
+	fmt.Println(userName)
+	if _, err := fmt.Fprintf(w, "Hello %v!", userName); err != nil {
+		log.Println(err)
+	}
+	//------------------------------------------------
 	w.WriteHeader(http.StatusOK)
 }
 
-func (u *UserID) createUserDB() error {
+// func (u *UserID) createUserDB() error {
+// 	db, err := connectDB()
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	defer db.Close()
+
+// 	if err := db.Ping(); err != nil {
+// 		fmt.Println("failure ping: %w", err)
+// 	}
+
+// 	sql := `insert into "dockertable" ("user_id") values($1);`
+// 	_, err = db.Exec(sql, u.user_id)
+// 	if err != nil {
+// 		return fmt.Errorf("error with create user")
+// 	}
+
+//		return nil
+//	}
+func (u UserID) selectUser() (string, error) {
 	db, err := connectDB()
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	defer db.Close()
-
-	if err := db.Ping(); err != nil {
-		fmt.Println("failure ping: %w", err)
+	var userName string
+	sql := `select user_id from "dockertable" where id = $1;`
+	if err := db.QueryRow(sql, u.user_id).Scan(&userName); err != nil {
+		return "", err
 	}
 
-	sql := `insert into "dockertable"("user_id") values($1);`
-	_, err = db.Exec(sql, u.user_id)
-	if err != nil {
-		return fmt.Errorf("error with create user")
-	}
-
-	return nil
+	return userName, nil
 }
 
 func connectDB() (*sql.DB, error) {
@@ -76,6 +98,9 @@ func connectDB() (*sql.DB, error) {
 	db, err := sql.Open("postgres", psqlconn)
 	if err != nil {
 		return nil, fmt.Errorf("problem with connect to DB")
+	}
+	if err := db.Ping(); err != nil {
+		fmt.Println("failure ping: %w", err)
 	}
 
 	return db, err

@@ -8,11 +8,11 @@ services:
       - POSTGRES_PASSWORD=db_password
       - POSTGRES_DB=postgress
       - PGDATA=/var/lib/postgresql/data
-    volumes:
-        # - /custom/mount:/var/lib/postgresql/data
-        - /data/db/postgres:/var/lib/postgresql/data
+    # volumes:
+    #     # - /custom/mount:/var/lib/postgresql/data
+    #     - /data/db/postgres:/var/lib/postgresql/data
     ports:
-      - "5431:5432"
+      - "5438:5438"
     networks:
       - docker_test
     restart: always
@@ -46,9 +46,9 @@ services:
         "-path",
         "/migrations",
         "-database",
-        "postgres://db_user:db_password@db:5432/postgress?sslmode=disable",
+        "postgres://db_user:db_password@db:5438/postgress?sslmode=disable",
         "up",
-        "1"
+        "2"
       ]
 networks:
   docker_test:
