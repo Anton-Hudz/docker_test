@@ -12,8 +12,8 @@ import (
 
 const (
 	server_port = ":8080"
-	db_host     = "localhost"
-	db_port     = 5438
+	db_host     = "db"
+	db_port     = 5432
 	db_user     = "db_user"
 	db_password = "db_password"
 	db_name     = "postgress"
